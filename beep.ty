@@ -56,7 +56,8 @@ gEnv = env(nil, [
     ">=": (a, b) => a >= b,
     "=": (a, b) => a == b,
     "!=": (a, b) => a != b,
-    "block": (...x) => x[x.len() - 1]
+    "bl": (...x) => x[x.len() - 1],
+    "l": (...x) => x
 ])
 
 fun = (params, body, cEnv) => {
@@ -72,13 +73,12 @@ fun = (params, body, cEnv) => {
 mac = (params, body, cEnv) => {
     [
         "_call_": (...args) => {
+            # println(args)
             val = table.zip(params, args);
             res = []; for i in table.zip(params, args) res[i[0]] = i[1];
             nEnv = env(cEnv, res)
-            println(body)
+            # println(body)
             res = interpreter(body, nEnv)
-            println(res)
-            res
         },
         "_type_": "macro"
     ]
@@ -101,13 +101,16 @@ interpreter = (ast, cEnv) => match ast[0] {
                     interpreter(ast[3], cEnv)
                 }
             },
+            ["SYM", "q"]: {
+                ast.pop!(0); ast
+            },
             ["SYM", "fn"]: fun(ast[1].map(item => item[1]), ast[2], cEnv),
             ["SYM", "mac"]: mac(ast[1].map(item => item[1]), ast[2], cEnv),
             _: {
                 f = interpreter(ast[0], cEnv);
                 if type(f) == "table" && f["_type_"] == "macro" {
                     ast.pop!(0);
-                    interpreter(f(ast), cEnv)
+                    interpreter(f(...ast), cEnv)
                 } else {
                     # print(ast[0][1], f)
                     ast.pop!(0);
@@ -118,4 +121,4 @@ interpreter = (ast, cEnv) => match ast[0] {
     }
 }
 
-print(interpreter(parser(lexer("((mac (x) x) 1)")), gEnv))
+print(interpreter(parser(lexer("(q a b c)")), gEnv))
